@@ -132,7 +132,7 @@ fn part2(rules: &Rules) -> usize {
 }
 
 fn main() {
-    let matches = App::new("AOC2020 Day6")
+    let matches = App::new("AOC2020 Day7")
         .arg(Arg::with_name("input")
              .long("input")
              .required(true)

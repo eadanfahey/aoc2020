@@ -113,7 +113,7 @@ fn part2(instructions: Vec<Instruction>) -> i64 {
 }
 
 fn main() {
-    let matches = App::new("AOC2020 Day6")
+    let matches = App::new("AOC2020 Day8")
         .arg(Arg::with_name("input")
              .long("input")
              .required(true)
