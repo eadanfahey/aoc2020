@@ -54,6 +54,11 @@ fn parse_input(s: &str) -> Option<Vec<Instruction>> {
     Some(instructions)
 }
 
+// set_bits returns an int which is bitwise 1 at the provided bit offsets and 0 otherwise.
+fn set_bits(bits: &[usize]) -> usize {
+    bits.iter().fold(0, |acc, k| acc | (1 << k))
+}
+
 pub fn part2(s: &str) -> usize {
     let instructions = parse_input(s).expect("parsing input");
     let mut memory = HashMap::new();
@@ -63,14 +68,10 @@ pub fn part2(s: &str) -> usize {
             .map(move |i| ins.mask.floating.iter().cloned().combinations(i))
             .flatten();
 
-        let off = ins.mask.floating.iter().fold(0, |acc, k| acc | (1 << *k));
-        let m = (ins.memset.pos | ins.mask.on) & !off;
-        let positions = combinations.map(move |com| {
-            let m2 = com.iter().fold(0, |acc, k| acc | (1 << *k));
-            m | m2
-        });
+        // Calculate the base mask. Remember to turn off all floating bits.
+        let m = (ins.memset.pos | ins.mask.on) & !set_bits(&ins.mask.floating);
 
-        for pos in positions {
+        for pos in combinations.map(|bits| m | set_bits(&bits)) {
             memory.insert(pos, ins.memset.value);
         }
     }
@@ -80,6 +81,11 @@ pub fn part2(s: &str) -> usize {
 #[allow(unused_imports)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn set_bits_test() {
+        assert_eq!(set_bits(&vec![5, 2, 0]), 0b100101);
+    }
 
     #[test]
     fn mask_from_str_test() {
