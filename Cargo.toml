@@ -51,7 +51,16 @@ path = "src/day11/main.rs"
 name = "day12"
 path = "src/day12/main.rs"
 
+[[bin]]
+name = "day13"
+path = "src/day13/main.rs"
+
+[[bin]]
+name = "day14"
+path = "src/day14/main.rs"
+
 [dependencies]
 regex = "1"
 clap = "2.33.0"
 lazy_static = "1.4.0"
+itertools = "0.9"
