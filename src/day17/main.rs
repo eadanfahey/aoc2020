@@ -16,42 +16,47 @@ struct Pos4 {
     w: i64,
 }
 
-impl Pos3 {
-    fn neighbors(&self) -> impl Iterator<Item=Self> + '_ {
-        iproduct!(-1..2, -1..2, -1..2)
+trait Pos where
+    Self: Eq + std::hash::Hash + Sized + Clone
+{
+    fn neighbors(&self) -> Box<dyn Iterator<Item=Self> + '_>;
+}
+
+
+impl Pos for Pos3 {
+    fn neighbors(&self) ->  Box<dyn Iterator<Item=Self> + '_> {
+        let it = iproduct!(-1..2, -1..2, -1..2)
             .filter_map(move |delta| {
                 match delta {
                     (0, 0, 0) => None,
                     (dx, dy, dz) => Some(Pos3{x: self.x + dx, y: self.y + dy, z: self.z + dz})
                 }
-            })
+            });
+        Box::new(it)
     }
 }
 
-impl Pos4 {
-    fn neighbors(&self) -> impl Iterator<Item=Self> + '_ {
-        iproduct!(-1..2, -1..2, -1..2, -1..2)
+impl Pos for Pos4 {
+    fn neighbors(&self) -> Box<dyn Iterator<Item=Self> + '_> {
+        let it = iproduct!(-1..2, -1..2, -1..2, -1..2)
             .filter_map(move |delta| {
                 match delta {
                     (0, 0, 0, 0) => None,
                     (dx, dy, dz, dw) => Some(Pos4{x: self.x + dx, y: self.y + dy, z: self.z + dz, w: self.w + dw})
                 }
-            })
+            });
+        Box::new(it)
     }
 }
 
-struct Grid3 {
-    active_cubes: HashSet<Pos3>
+struct Grid<P: Pos> {
+    active_cubes: HashSet<P>
 }
 
-struct Grid4 {
-    active_cubes: HashSet<Pos4>
-}
-
-impl Grid3 {
-    fn update_grid(&mut self) {
+impl<P: Pos> Grid<P> {
+    fn updates(&self) -> HashMap<P, bool> {
         let mut inactive_cubes = HashMap::new();
-        let mut deactivate_cubes = HashSet::new();
+        let mut res = HashMap::new();
 
         for cube in self.active_cubes.iter() {
             let mut n_active_neighbors = 0;
@@ -64,52 +69,31 @@ impl Grid3 {
                 }
             }
             if !(n_active_neighbors == 2 || n_active_neighbors == 3) {
-                deactivate_cubes.insert(cube.clone());
+                res.insert(cube.clone(), false);
             }
         }
 
         for cube in inactive_cubes.into_iter().filter(|(_, v)| v == &3).map(|(k, _)| k) {
-            self.active_cubes.insert(cube);
+            res.insert(cube.clone(), true);
         }
 
-        for cube in deactivate_cubes.iter() {
-            self.active_cubes.remove(cube);
-        }
+        res
     }
 
-}
-
-impl Grid4 {
     fn update_grid(&mut self) {
-        let mut inactive_cubes = HashMap::new();
-        let mut deactivate_cubes = HashSet::new();
-
-        for cube in self.active_cubes.iter() {
-            let mut n_active_neighbors = 0;
-            for pos in cube.neighbors() {
-                if self.active_cubes.contains(&pos) {
-                    n_active_neighbors += 1;
-                } else {
-                    let n = inactive_cubes.entry(pos).or_insert(0);
-                    *n += 1;
-                }
+        let updates = self.updates();
+        for (cube, &on) in updates.iter() {
+            if on {
+                self.active_cubes.insert(cube.clone());
+            } else {
+                self.active_cubes.remove(cube);
             }
-            if !(n_active_neighbors == 2 || n_active_neighbors == 3) {
-                deactivate_cubes.insert(cube.clone());
-            }
-        }
-
-        for cube in inactive_cubes.into_iter().filter(|(_, v)| v == &3).map(|(k, _)| k) {
-            self.active_cubes.insert(cube);
-        }
-
-        for cube in deactivate_cubes.iter() {
-            self.active_cubes.remove(cube);
         }
     }
+
 }
 
-fn parse_input3(s: &str) -> Grid3 {
+fn parse_input3(s: &str) -> Grid<Pos3> {
     let mut active_cubes = HashSet::new();
     for (y, line) in s.split('\n').filter(|l| !l.is_empty()).enumerate() {
         for (x, c) in line.chars().enumerate() {
@@ -119,10 +103,10 @@ fn parse_input3(s: &str) -> Grid3 {
         }
     }
     
-    Grid3{active_cubes}
+    Grid{active_cubes}
 }
 
-fn parse_input4(s: &str) -> Grid4 {
+fn parse_input4(s: &str) -> Grid<Pos4> {
     let mut active_cubes = HashSet::new();
     for (y, line) in s.split('\n').filter(|l| !l.is_empty()).enumerate() {
         for (x, c) in line.chars().enumerate() {
@@ -132,18 +116,17 @@ fn parse_input4(s: &str) -> Grid4 {
         }
     }
     
-    Grid4{active_cubes}
+    Grid{active_cubes}
 }
 
-
-fn part1(mut grid: Grid3) -> usize {
+fn part1(mut grid: Grid<Pos3>) -> usize {
     for _ in 0..6 {
         grid.update_grid();
     }
     grid.active_cubes.len()
 }
 
-fn part2(mut grid: Grid4) -> usize {
+fn part2(mut grid: Grid<Pos4>) -> usize {
     for _ in 0..6 {
         grid.update_grid();
     }
